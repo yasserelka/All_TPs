@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP Pro Client</title>
+    <style>
+        :root {
+            --primary: #4a6fa5;
+            --primary-dark: #166088;
+            --secondary: #4fc3f7;
+            --success: #66bb6a;
+            --danger: #ef5350;
+            --warning: #ffa726;
+            --light: #f5f7fa;
+            --dark: #333;
+            --border: #c5cae9;
+            --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            --radius: 4px;
+            --shadow: 0 2px 4px rgba(0,0,0,0.1);
+            --header-height: 50px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e3f2fd;
+            color: var(--dark);
+            line-height: 1.5;
+        }
+
+        .app-header {
+            background-color: var(--primary-dark);
+            color: white;
+            padding: 0 20px;
+            height: var(--header-height);
+            display: flex;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .app-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .app-container {
+            display: flex;
+            height: calc(100vh - var(--header-height));
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: white;
+            border-right: 1px solid var(--border);
+            padding: 10px 0;
+            overflow-y: auto;
+        }
+
+        .sidebar-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--dark);
+        }
+
+        .sidebar-item:hover, .sidebar-item.active {
+            background-color: #e3f2fd;
+            color: var(--primary);
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: white;
+        }
+
+        .request-panel, .response-panel {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .panel-title {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-family: var(--mono);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .header-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .header-row input {
+            flex: 1;
+        }
+
+        .header-row button {
+            padding: 6px 10px;
+            background-color: var(--danger);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .add-header {
+            background-color: var(--success);
+        }
+
+        .response-status {
+            background-color: #e3f2fd;
+            padding: 10px;
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            font-family: var(--mono);
+        }
+
+        .response-headers, .response-body {
+            background-color: #f5f7fa;
+            padding: 10px;
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            font-family: var(--mono);
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .error {
+            background-color: #ffebee;
+            color: #d32f2f;
+            border: 1px solid #ef9a9a;
+            border-radius: var(--radius);
+            padding: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #666;
+        }
+
+        .tab-bar {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <div class="app-title">HTTP Pro Client</div>
+    </div>
+    <div class="app-container">
+        <div class="sidebar">
+            <div class="sidebar-item active">
+                <span>⚡</span>
+                <span>Nouvelle requête</span>
+            </div>
+            <div class="sidebar-item">
+                <span>📋</span>
+                <span>Historique</span>
+            </div>
+            <div class="sidebar-item">
+                <span>⚙️</span>
+                <span>Paramètres</span>
+            </div>
+        </div>
+        <div class="main-content">
+            <div class="request-panel">
+                <div class="panel-header">
+                    <div class="panel-title">Requête HTTP</div>
+                    <div class="tab-bar">
+                        <div class="tab active">Requête</div>
+                        <div class="tab">Réponse</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="method">Méthode</label>
+                    <select id="method">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                        <option value="PATCH">PATCH</option>
+                        <option value="HEAD">HEAD</option>
+                        <option value="OPTIONS">OPTIONS</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="url">URL</label>
+                    <input type="text" id="url" placeholder="https://api.example.com/endpoint" value="https://jsonplaceholder.typicode.com/posts/1">
+                </div>
+
+                <div class="form-group">
+                    <label>Headers</label>
+                    <div id="headers-container">
+                        <div class="header-row">
+                            <input type="text" placeholder="Nom du header" class="header-key">
+                            <input type="text" placeholder="Valeur" class="header-value">
+                            <button class="remove-header" style="display: none;">✗</button>
+                        </div>
+                    </div>
+                    <button type="button" class="add-header" onclick="addHeaderRow()">+ Ajouter un header</button>
+                </div>
+
+                <div class="form-group">
+                    <label for="body">Body</label>
+                    <textarea id="body" placeholder='{"key": "value"}'></textarea>
+                </div>
+
+                <button onclick="sendRequest()">Envoyer</button>
+            </div>
+
+            <div class="response-panel" id="response-container" style="display: none;">
+                <div class="panel-header">
+                    <div class="panel-title">Réponse</div>
+                </div>
+                <div id="response-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let headerCount = 1;
+
+        function addHeaderRow(key = '', value = '') {
+            const container = document.getElementById('headers-container');
+            const headerRow = document.createElement('div');
+            headerRow.className = 'header-row';
+
+            const keyInput = document.createElement('input');
+            keyInput.type = 'text';
+            keyInput.placeholder = 'Nom du header';
+            keyInput.className = 'header-key';
+            keyInput.value = key;
+
+            const valueInput = document.createElement('input');
+            valueInput.type = 'text';
+            valueInput.placeholder = 'Valeur';
+            valueInput.className = 'header-value';
+            valueInput.value = value;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.textContent = '✗';
+            removeBtn.onclick = function() {
+                container.removeChild(headerRow);
+            };
+
+            headerRow.appendChild(keyInput);
+            headerRow.appendChild(valueInput);
+            headerRow.appendChild(removeBtn);
+            container.appendChild(headerRow);
+        }
+
+        function getHeaders() {
+            const headers = {};
+            const headerRows = document.querySelectorAll('.header-row');
+
+            headerRows.forEach(row => {
+                const key = row.querySelector('.header-key').value.trim();
+                const value = row.querySelector('.header-value').value.trim();
+
+                if (key && value) {
+                    headers[key] = value;
+                }
+            });
+
+            return headers;
+        }
+
+        async function sendRequest() {
+            const method = document.getElementById('method').value;
+            const url = document.getElementById('url').value.trim();
+            const headers = getHeaders();
+            const body = document.getElementById('body').value;
+
+            if (!url) {
+                alert('Veuillez entrer une URL');
+                return;
+            }
+
+            const responseContainer = document.getElementById('response-container');
+            const responseContent = document.getElementById('response-content');
+
+            responseContainer.style.display = 'block';
+            responseContent.innerHTML = '<div class="loading">Envoi de la requête...</div>';
+
+            const requestOptions = {
+                method: method,
+                headers: headers,
+                mode: 'cors'
+            };
+
+            if (method !== 'GET' && method !== 'HEAD' && body.trim()) {
+                requestOptions.body = body;
+
+                if (!headers['Content-Type'] && !headers['content-type']) {
+                    try {
+                        JSON.parse(body);
+                        requestOptions.headers['Content-Type'] = 'application/json';
+                    } catch (e) {}
+                }
+            }
+
+            try {
+                const startTime = Date.now();
+                const response = await fetch(url, requestOptions);
+                const endTime = Date.now();
+                const duration = endTime - startTime;
+
+                let responseBody;
+                const contentType = response.headers.get('content-type');
+
+                if (contentType && contentType.includes('application/json')) {
+                    responseBody = await response.json();
+                    responseBody = JSON.stringify(responseBody, null, 2);
+                } else {
+                    responseBody = await response.text();
+                }
+
+                const responseHeaders = {};
+                response.headers.forEach((value, key) => {
+                    responseHeaders[key] = value;
+                });
+
+                responseContent.innerHTML = `
+                    <div class="response-status">
+                        <strong>Statut:</strong> ${response.status} ${response.statusText}<br>
+                        <strong>Temps:</strong> ${duration}ms
+                    </div>
+                    <div class="response-headers">
+                        <strong>Headers de la réponse:</strong><br>
+                        ${formatHeaders(responseHeaders)}
+                    </div>
+                    <div class="response-body">
+                        <strong>Corps de la réponse:</strong><br>
+                        ${escapeHtml(responseBody)}
+                    </div>
+                `;
+
+            } catch (error) {
+                responseContent.innerHTML = `
+                    <div class="response-status error">
+                        <strong>Erreur:</strong> ${error.message}<br>
+                        <strong>Détails:</strong> Vérifiez que l'URL est accessible et que CORS est configuré correctement.
+                    </div>
+                `;
+            }
+        }
+
+        function formatHeaders(headers) {
+            let html = '';
+            for (const [key, value] of Object.entries(headers)) {
+                html += `<strong>${escapeHtml(key)}:</strong> ${escapeHtml(value)}<br>`;
+            }
+            return html || 'Aucun header';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            addHeaderRow('Accept', 'application/json');
+        });
+    </script>
+</body>
+</html>
